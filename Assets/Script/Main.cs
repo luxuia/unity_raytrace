@@ -10,6 +10,7 @@ using System.Linq;
 
 public class Main : MonoBehaviour {
     public RawImage img;
+    public Text text;
 
     Stopwatch stopWatch = new Stopwatch();
     NativeArray<Color> backBuffer;
@@ -48,20 +49,27 @@ public class Main : MonoBehaviour {
 
         Physics.queriesHitBackfaces = true;
 
-        DoUpdate();
+        accFrameID = 1;
+        //DoUpdate();
     }
 
+    int accFrameID;
     void DoUpdate() {
        
-        if (DoCapture) {
+        if (true || DoCapture) {
             DoCapture = false;
             cameraWrap = new CameraWrap(Camera.main, lens_radius);
 
             int rayCount = 0;
             stopWatch.Start();
-            tracer.DoTrace(width, height, cameraWrap, traceObjs, backBuffer, out rayCount);
+            tracer.DoTrace(width, height, cameraWrap, traceObjs, backBuffer, accFrameID, out rayCount);
             stopWatch.Stop();
 
+            float timeDelta = (float)(double)stopWatch.ElapsedTicks/Stopwatch.Frequency;
+            text.text = string.Format("FPS {0:F2}, RayCount {1:F2}", 1 / timeDelta, rayCount / timeDelta *10e-6);
+            stopWatch.Reset();
+
+            accFrameID++;
             unsafe
             {
                 backBufferTex.LoadRawTextureData((IntPtr)backBuffer.GetUnsafeReadOnlyPtr(),

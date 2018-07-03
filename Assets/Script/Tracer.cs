@@ -7,7 +7,7 @@ using static Helper;
 
 public class Tracer {
 
-    const int SAMPLE_PER_PIXEL = 200;
+    const int SAMPLE_PER_PIXEL = 2;
     const int MAX_DEPTH = 10;
 
     Dictionary<int, TraceObj> scene;
@@ -72,6 +72,9 @@ public class Tracer {
 
     Color Trace(ref Ray ray, int depth, ref int rayCount, List<Vector3> debugInfo) {
         RaycastHit hit = new RaycastHit();
+
+        rayCount++;
+
         if (Physics.Raycast(ray, out hit)) {
             var obj = scene[hit.collider.GetInstanceID()];
 
@@ -118,7 +121,7 @@ public class Tracer {
         }
     }
 
-    int TraceRowJob(int y, int width, int height, NativeArray<Color> backbuffer, ref CameraWrap camera) {
+    int TraceRowJob(int y, int width, int height, NativeArray<Color> backbuffer, ref CameraWrap camera, int frameID) {
         int rayCount = 0;
 
         for (int x = 0; x < width; ++x) {
@@ -135,18 +138,18 @@ public class Tracer {
             color = color.gamma;
 
             var old = backbuffer[y * width + x];
-            backbuffer[y * width + x] = color;// (old+color)/2;
+            backbuffer[y * width + x] = (old * (frameID - 1) + color) / frameID;
         }
 
         return rayCount;
     }
 
-	public void DoTrace(int width, int height, CameraWrap camera, List<TraceObj> objs, NativeArray<Color> backBuffer, out int rayCount) {
+	public void DoTrace(int width, int height, CameraWrap camera, List<TraceObj> objs, NativeArray<Color> backBuffer, int frameID, out int rayCount) {
         rayCount = 0;
         scene = objs.ToDictionary((obj) => obj.id);
 
         for ( int y = 0; y < height; ++y) {
-            rayCount += TraceRowJob(y, width, height, backBuffer, ref camera); 
+            rayCount += TraceRowJob(y, width, height, backBuffer, ref camera, frameID); 
         }
     }
 }
